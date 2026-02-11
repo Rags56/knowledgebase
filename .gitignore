@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+master/backend/venv/
+master/ingestion_module/venv/
+__pycache__/
+*.pyc
