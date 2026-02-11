@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+requests
+sqlalchemy
+psycopg2-binary
+langdetect==1.0.9
+pdfplumber==0.11.9
+python-docx==0.8.11
+python-pptx==0.6.2
+spacy
+ollama
+sentence-transformers
+qdrant-client
+uuid
+python-multipart
