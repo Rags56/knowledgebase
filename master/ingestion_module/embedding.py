@@ -14,7 +14,7 @@ from qdrant_client.http.models import PointStruct
 #testing imports
 import time
 import os
-
+import uuid
 #CHANGE THIS TO THE CORRECT IP ADDRESS
 QDRANT_IP = os.getenv("QDRANT_IP") or "http://localhost:6333"
 

@@ -59,6 +59,7 @@ def setup_database_extension():
     cursor = conn.cursor()
     #table will be like this 
     #id + name + files (json array: [{filename, hash, document_id}])
+    cursor.execute("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, password VARCHAR(255), flags VARCHAR(255))")
     cursor.execute("CREATE TABLE IF NOT EXISTS lecture (id SERIAL PRIMARY KEY, name VARCHAR(255), files TEXT)")
     # Migration: Add audit_id to ai_chats if not exists
     cursor.execute("ALTER TABLE ai_chats ADD COLUMN IF NOT EXISTS audit_id INT")

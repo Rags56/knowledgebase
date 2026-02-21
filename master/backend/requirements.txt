@@ -13,3 +13,5 @@ sentence-transformers
 qdrant-client
 uuid
 python-multipart
+bcrypt
+python-dotenv

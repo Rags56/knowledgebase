@@ -1,10 +1,13 @@
-from fastapi import FastAPI, HTTPException, Security
+from fastapi import FastAPI, HTTPException, Security, Query
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 import importlib
 import psycopg2
 #import env 
 import os
+from dotenv import load_dotenv
+load_dotenv()  # loads backend/.env into os.environ
+
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance
 from qdrant_client.http.models import PointStruct
@@ -36,7 +39,7 @@ from core.routes import router as core_router
 app.include_router(core_router)
 
 # Enabled extensions (config / env / DB / feature flags)
-extensions_env = os.getenv("ENABLED_EXTENSIONS", "lectures")
+extensions_env = os.getenv("ENABLED_EXTENSIONS", "RBAC")
 ENABLED_EXTENSIONS = [ext.strip() for ext in extensions_env.split(",") if ext.strip()]
 
 @app.on_event("startup")
@@ -50,20 +53,20 @@ def setup_database():
         database=POSTGRES_DB
     )
     #create users table (id) (password) (optional if we want auth) flags (optional)
-    cursor = conn.cursor() 
-    cursor.execute("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, password VARCHAR(255), flags VARCHAR(255))")
-    
-    #create two audit tables
-    #general audit -> timestamp + action
+    cursor = conn.cursor()
+
+
+    # General audit -> timestamp + action
     cursor.execute("CREATE TABLE IF NOT EXISTS audit_general (id SERIAL PRIMARY KEY, timestamp TIMESTAMP, action VARCHAR(255))")
-    #ai audit table -> id + timestamp + user + query + files accessed + output + rating (thumbs up/down) + feedback
+    # AI audit table
     cursor.execute("CREATE TABLE IF NOT EXISTS audit_ai (id SERIAL PRIMARY KEY, timestamp TIMESTAMP, user_id INT REFERENCES users(id), query TEXT, files_accessed TEXT, output TEXT, rating VARCHAR(255), feedback TEXT)")
-    #ai chats    
-    cursor.execute("CREATE TABLE IF NOT EXISTS ai_chats (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id), session_id VARCHAR(255), turn INT, role VARCHAR(10), message TEXT, timestamp TIMESTAMP DEFAULT NOW())")
-    #sessions table
-    cursor.execute("CREATE TABLE IF NOT EXISTS sessions ( session_id TEXT PRIMARY KEY,user_id INT NOT NULL,created_at TIMESTAMP NOT NULL DEFAULT now(),expires_at TIMESTAMP NOT NULL)")
+    # AI chats
+    cursor.execute("CREATE TABLE IF NOT EXISTS ai_chats (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id), session_id VARCHAR(255), turn INT, role VARCHAR(10), message TEXT, timestamp TIMESTAMP DEFAULT NOW(),audit_id INT)")
+    # Sessions table
+    cursor.execute("CREATE TABLE IF NOT EXISTS sessions (session_id TEXT PRIMARY KEY, user_id INT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT now(), expires_at TIMESTAMP NOT NULL)")
     conn.commit()
     conn.close()
+
     qdrant_setup()
 
 def qdrant_setup():
@@ -77,6 +80,7 @@ def qdrant_setup():
         )
     
 #call the setup_database_extension function from the extension file
+
 for ext in ENABLED_EXTENSIONS:
     module_path = f"extensions.{ext}.routes"
     module = importlib.import_module(module_path)

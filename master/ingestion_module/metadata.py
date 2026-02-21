@@ -3,9 +3,9 @@
 #this is a template and can be modified based on the client's needs.
 
 #lectures for colleges
-LECTURES = True
+LECTURES = False
 #RBAC for institutions
-RBAC = False
+RBAC = True
 
 REQUIRED_METADATA = {
     "base": {
