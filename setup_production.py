@@ -37,8 +37,20 @@ def main():
     api_key = input("Enter API Key [blockexe123]: ").strip() or "blockexe123"
     
     print("\n--- Extensions ---")
-    print("Available extensions: lectures")
+    print("Available extensions: lectures, RBAC")
     extensions_input = input("Enter enabled extensions (comma-separated) [lectures]: ").strip() or "lectures"
+
+    # Derive the frontend folder from the first listed extension (e.g. "RBAC" -> "RBAC_frontend")
+    extensions_list = [e.strip() for e in extensions_input.split(',') if e.strip()]
+    primary_extension = extensions_list[0] if extensions_list else "lectures"
+    frontend_dir = f"{primary_extension}_frontend"
+
+    print(f"\nℹ️  Frontend folder that will be used: '{frontend_dir}'")
+
+    if 'RBAC' in extensions_list:
+        print("\n⚠️  RBAC note: the PostgreSQL username and password you entered above")
+        print("   will also be used as the default RBAC administrator login credentials.")
+        print("   Make sure to remember them — you will need them to log into the RBAC frontend.")
 
     print("\n--- Frontend Configuration ---")
     backend_url = input("Enter Backend API URL for Frontend [http://localhost:8000]: ").strip() or "http://localhost:8000"
@@ -61,7 +73,7 @@ def main():
     current_dir = os.getcwd()
     source_root = os.path.join(current_dir, 'master')
     
-    dirs_to_copy = ['backend', 'frontend', 'ingestion_module']
+    dirs_to_copy = ['backend', 'ingestion_module']
     
     for d in dirs_to_copy:
         src = os.path.join(source_root, d)
@@ -70,6 +82,21 @@ def main():
             shutil.copytree(src, dst, ignore=ignore_patterns)
         else:
             print(f"Warning: Source directory '{d}' not found!")
+
+    # Copy the correct frontend folder (named <extension>_frontend)
+    frontend_src = os.path.join(source_root, frontend_dir)
+    frontend_dst = os.path.join(base_dir, 'frontend')
+    if os.path.exists(frontend_src):
+        shutil.copytree(frontend_src, frontend_dst, ignore=ignore_patterns)
+        print(f"Copied '{frontend_dir}' -> 'frontend'")
+    else:
+        print(f"Warning: Frontend directory '{frontend_dir}' not found in master/! Falling back to 'frontend' if available.")
+        fallback_src = os.path.join(source_root, 'frontend')
+        if os.path.exists(fallback_src):
+            shutil.copytree(fallback_src, frontend_dst, ignore=ignore_patterns)
+            print("  Used generic 'frontend' folder as fallback.")
+        else:
+            print("  No frontend folder found — skipping frontend copy!")
 
     # Create directories for other services
     os.makedirs(os.path.join(base_dir, "postgres"))
@@ -112,10 +139,23 @@ It contains all necessary source code and configuration to run the application i
     ```
 
 ## Folder Structure
-*   `backend/`, `frontend/`, `ingestion_module/`: Source code.
+*   `backend/`, `frontend/` (copied from `{frontend_dir}`), `ingestion_module/`: Source code.
 *   `backend.Dockerfile`: Build instructions for the API.
-*   `frontend.Dockerfile`: Build instructions for the Web App.
+*   `frontend.Dockerfile`: Build instructions for the Web App (uses the `{frontend_dir}` source).
 *   `docker-compose.yml`: Service orchestration.
+
+## RBAC Extension – Default Administrator
+
+> **Important:** If the RBAC extension is enabled, the PostgreSQL credentials
+> configured during setup (`POSTGRES_USER` / `POSTGRES_PASSWORD`) serve a **dual
+> purpose**: they are used both to connect to the database **and** as the
+> **default RBAC administrator login** on first launch.
+>
+> Use those same credentials to log into the RBAC frontend (`/admin` route).
+> From there you can create additional admin or user accounts, define
+> organisational flags, and upload knowledge files.
+>
+> The default admin account can be changed at any time via the RBAC admin panel.
 """
     with open(os.path.join(base_dir, "README.md"), "w") as f:
         f.write(readme_content)
