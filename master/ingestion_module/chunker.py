@@ -2,12 +2,20 @@
 
 
 from typing import List
+import re
+
+
+def split_sentences_ar(text:str) -> List[str]:
+    sentences = re.split(r'[.!؟!\n…]+', text)
+    return [s.strip() for s in sentences if s.strip()]
 
 def semantic_chunks(nlp:object,text: str, chunk_size: int = 500, chunk_overlap: int = 50, language: str = "en") -> List[str]:
 
-
-    doc = nlp(text)
-    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
+    if language == "en":
+        doc = nlp(text)
+        sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
+    elif language == "ar":
+        sentences = split_sentences_ar(text)
 
     chunks = []
     current_chunk = ""
@@ -36,9 +44,8 @@ def chunks(text:str,chunk_size:int, chunk_overlap:int,language:str) -> list[dict
     # Load model once per language
     if language == "en":
         nlp = spacy.load("en_core_web_sm")
-    #TODO : add support for other languages
-    #elif language == "ar":
-    #    nlp = spacy.load("ar_core_web_sm")
+    elif language == "ar":
+        nlp = None
     else:
         raise ValueError(f"Unsupported language: {language}")
     #now that we have the text we can chunk it
